@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>課程轉盤</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+
+    #spin {
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-size: 18px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .marker {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 30px solid #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>今天要上什麼課？</h1>
+    <div style="position: relative; width: 400px; height: 400px;">
+      <div class="marker"></div>
+      <canvas id="wheel" width="400" height="400"></canvas>
+    </div>
+    <button id="spin">轉動輪盤</button>
+    <div id="result">請點擊按鈕開始</div>
+  </div>
+
+  <script>
+    const options = ["只上必修", "只上選修", "都上", "只上通識", "都不上"];
+    const colors = ["#FF5252", "#FF9800", "#4CAF50", "#2196F3", "#9C27B0"];
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const resultDiv = document.getElementById("result");
+    const spinButton = document.getElementById("spin");
+
+    const radius = canvas.width / 2;
+    let startAngle = 0;
+    let isSpinning = false;
+
+    function drawWheel() {
+      const arc = 2 * Math.PI / options.length;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      options.forEach((option, i) => {
+        const angle = startAngle + i * arc;
+        ctx.beginPath();
+        ctx.moveTo(radius, radius);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.arc(radius, radius, radius, angle, angle + arc, false);
+        ctx.fill();
+
+        // 水平文字
+        const midAngle = angle + arc / 2;
+        const textX = radius + Math.cos(midAngle) * (radius * 0.65);
+        const textY = radius + Math.sin(midAngle) * (radius * 0.65);
+
+        ctx.save();
+        ctx.fillStyle = "white";
+        ctx.font = "bold 16px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(option, textX, textY);
+        ctx.restore();
+      });
+    }
+
+    function spinWheel() {
+      if (isSpinning) return;
+      isSpinning = true;
+      resultDiv.textContent = "轉盤旋轉中...";
+
+      const arc = 2 * Math.PI / options.length;
+      const randomIndex = Math.floor(Math.random() * options.length);
+      const stopAngle = 3 * 2 * Math.PI + (Math.PI * 3 / 2 - (randomIndex * arc + arc / 2));
+      let duration = 4000;
+      let start = null;
+
+      function animate(timestamp) {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+        const angle = easeOutCubic(progress / duration) * stopAngle;
+        startAngle = angle;
+        drawWheel();
+
+        if (progress < duration) {
+          requestAnimationFrame(animate);
+        } else {
+          const selectedOption = options[randomIndex];
+          resultDiv.textContent = `結果：${selectedOption}`;
+          isSpinning = false;
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function easeOutCubic(t) {
+      return (--t) * t * t + 1;
+    }
+
+    drawWheel();
+    spinButton.addEventListener("click", spinWheel);
+  </script>
+</body>
+</html>
